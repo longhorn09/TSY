@@ -3,7 +3,8 @@ import requests
 import xml.etree.ElementTree as ET
 
 #########################################################
-# https://www.treasury.gov/resource-center/data-chart-center/interest-rates/pages/textview.aspx?data=yield
+# XML source: https://www.treasury.gov/resource-center/data-chart-center/interest-rates/pages/textview.aspx?data=yield
+# help reference: https://www.geeksforgeeks.org/xml-parsing-python/
 #########################################################
 class Treasury:        
     def __init__(self):
