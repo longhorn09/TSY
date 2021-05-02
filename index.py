@@ -2,6 +2,7 @@ import csv
 import requests
 import json # used for reading config.json for db authentication credentials
 from xml.dom import minidom # https://docs.python.org/3/library/xml.dom.minidom.html
+import mysql.connector as mysql #import sqlite3  
 
 #########################################################
 # https://stackoverflow.com/questions/22586286/python-is-there-an-equivalent-of-mid-right-and-left-from-basic
@@ -18,8 +19,8 @@ class Treasury:
     def getTreasuryXML(self):
   
         # url of rss feed
-        url = 'https://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData' # all-time, rates SI
-  #      url = 'https://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData?$filter=month(NEW_DATE)%20eq%204%20and%20year(NEW_DATE)%20eq%202021'
+  #      url = 'https://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData' # all-time, rates SI
+        url = 'https://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData?$filter=month(NEW_DATE)%20eq%204%20and%20year(NEW_DATE)%20eq%202021'
   
         # creating HTTP response object from given url
         resp = requests.get(url)
@@ -28,16 +29,7 @@ class Treasury:
         with open('treasury.xml', 'wb') as f:
             f.write(resp.content)
     
-    ######################################################################### 
-    # just for testing config file reading
-    # sudo apt-get update -y && sudo apt install python3-pip -y
-    # pip3 install mysql-connector-python
-    ######################################################################### 
-    def getDB(self):
-        with open('config.json') as fp:
-            data = json.load(fp)
-        print(data['username'])
-        print(data['password'])
+
     ######################################################################### 
     # does the main parsing of the Treasury XML using Python minidom class
     # help reference: https://www.oreilly.com/library/view/python-xml/0596001282/ch04s04.html
@@ -46,10 +38,11 @@ class Treasury:
 
         with open('config.json') as fp:
             configData = json.load(fp)
-            print(configData['username'])
-            print(configData['password'])
-            print(configData['host'])
-            print(configData['port'])
+
+        # https://www.thepythoncode.com/article/connect-to-a-remote-mysql-server-in-python
+        mydb = mysql.connect(host=configData['host'], database=configData['database'], user=configData['username'], password=configData['password'])
+        print("Connected to:", mydb.get_server_info())
+        mycursor = mydb.cursor()
 
         tsyGovLink = ""
         mydoc = minidom.parse('treasury.xml')
@@ -59,20 +52,27 @@ class Treasury:
         
         for elem in items:            
             if (elem.childNodes[1].tagName == "id"):
-                tsyGovLink = elem.childNodes[1].firstChild.data
+                tsyGovLink = elem.childNodes[1].firstChild.data #gets the hyperlink to the treasury gov website
             if (elem.childNodes[13].tagName == "content"):
                 for x in range(1,elem.childNodes[13].childNodes[1].childNodes.length):
                     if (elem.childNodes[13].childNodes[1].childNodes[x].nodeType == elem.ELEMENT_NODE):
-                       # print(str(x) + ' ' + elem.childNodes[13].childNodes[1].childNodes[x].tagName)
-                        mytag= elem.childNodes[13].childNodes[1].childNodes[x].tagName
+                        mytag = elem.childNodes[13].childNodes[1].childNodes[x].tagName 
                         if (mytag == "d:NEW_DATE"):
                             tsyDate = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
 
                         if (left(mytag,5)=="d:BC_"):    # this is the prefix US Treasury uses for rates
-                            if(elem.childNodes[13].childNodes[1].childNodes[x].hasAttribute('m:null') and elem.childNodes[13].childNodes[1].childNodes[x].getAttribute('m:null') == 'true'):
-                                    print(tsyDate + ' ' + mytag +': true')
-                                #print(elem.childNodes[13].childNodes[1].childNodes[x].getAttribute('m:null'))
-                                    #print('null')
+                            if (elem.childNodes[13].childNodes[1].childNodes[x].hasAttribute('m:null') and elem.childNodes[13].childNodes[1].childNodes[x].getAttribute('m:null') == 'true'):
+                                assert(true)
+                            elif (elem.childNodes[13].childNodes[1].childNodes[x].hasAttribute('m:null')==False):
+                                if (mytag == "d:BC_1YEAR"):
+                                    
+                                    y1 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
+
+                                    sql = "INSERT INTO TSY_HISTORICALS(URL, 1Y)  "
+                                    sql += "VALUES(" + chr(39) + tsyGovLink + chr(39) + "," + y1 + ")"
+
+                                    mycursor.execute(sql)
+                                    mydb.commit()
                         """
                         elif (mytag == "d:BC_1MONTH"):
                             print('  1 mo: ' + str(elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data))
@@ -105,5 +105,4 @@ class Treasury:
 if __name__ == '__main__':
     myObj = Treasury()
     myObj.getTreasuryXML()
-    #myObj.parseXML()
-    myObj.getDB()
+    myObj.parseXML()
