@@ -25,6 +25,7 @@ class Treasury:
 
     ######################################################################### 
     # does the main parsing of the Treasury XML using Python minidom class
+    # help reference: https://www.oreilly.com/library/view/python-xml/0596001282/ch04s04.html
     #########################################################################
     def parseXML(self):
         tsyGovLink = ""
