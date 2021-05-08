@@ -19,8 +19,8 @@ class Treasury:
     def getTreasuryXML(self):
   
         # url of rss feed
-  #      url = 'https://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData' # all-time, rates SI
-        url = 'https://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData?$filter=month(NEW_DATE)%20eq%204%20and%20year(NEW_DATE)%20eq%202021'
+        url = 'https://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData' # all-time, rates SI
+        #url = 'https://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData?$filter=month(NEW_DATE)%20eq%204%20and%20year(NEW_DATE)%20eq%202021'
   
         # creating HTTP response object from given url
         resp = requests.get(url)
@@ -54,52 +54,60 @@ class Treasury:
             if (elem.childNodes[1].tagName == "id"):
                 tsyGovLink = elem.childNodes[1].firstChild.data #gets the hyperlink to the treasury gov website
             if (elem.childNodes[13].tagName == "content"):
+                y1 = -99 ; y2 = -99; y3 = -99; y5 = -99; y7 = -99; y10 = -99; y20 = -99; y30 = -99
+                m1 = -99; m2 = -99; m3 = -99; m6 = -99
                 for x in range(1,elem.childNodes[13].childNodes[1].childNodes.length):
                     if (elem.childNodes[13].childNodes[1].childNodes[x].nodeType == elem.ELEMENT_NODE):
                         mytag = elem.childNodes[13].childNodes[1].childNodes[x].tagName 
                         if (mytag == "d:NEW_DATE"):
                             tsyDate = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
-
                         if (left(mytag,5)=="d:BC_"):    # this is the prefix US Treasury uses for rates
                             if (elem.childNodes[13].childNodes[1].childNodes[x].hasAttribute('m:null') and elem.childNodes[13].childNodes[1].childNodes[x].getAttribute('m:null') == 'true'):
-                                assert(true)
+                                assert(True)
                             elif (elem.childNodes[13].childNodes[1].childNodes[x].hasAttribute('m:null')==False):
-                                if (mytag == "d:BC_1YEAR"):
-                                    
+                                if (mytag == "d:BC_1MONTH"):                                    
+                                    m1 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
+                                elif (mytag == "d:BC_2MONTH"):                                    
+                                    m2 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
+                                elif (mytag == "d:BC_3MONTH"):                                    
+                                    m3 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
+                                elif (mytag == "d:BC_6MONTH"):                                    
+                                    m6 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
+                                elif (mytag == "d:BC_1YEAR"):                                    
                                     y1 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
+                                elif (mytag == "d:BC_2YEAR"):
+                                    y2 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
+                                elif  (mytag == "d:BC_3YEAR"):
+                                    y3 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
+                                elif  (mytag == "d:BC_5YEAR"):
+                                    y5 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
+                                elif  (mytag == "d:BC_7YEAR"):
+                                    y7 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
+                                elif  (mytag == "d:BC_10YEAR"):
+                                    y10 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
+                                elif  (mytag == "d:BC_20YEAR"):
+                                    y20 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
+                                elif  (mytag == "d:BC_30YEAR"):
+                                    y30 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
 
-                                    sql = "INSERT INTO TSY_HISTORICALS(URL, 1Y)  "
-                                    sql += "VALUES(" + chr(39) + tsyGovLink + chr(39) + "," + y1 + ")"
-
-                                    mycursor.execute(sql)
-                                    mydb.commit()
-                        """
-                        elif (mytag == "d:BC_1MONTH"):
-                            print('  1 mo: ' + str(elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data))
-                        elif (mytag == "d:BC_2MONTH"):
-                            print('  2 mo: ' + str(elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data))
-                        elif (elem.childNodes[13].childNodes[1].childNodes[x].tagName == "d:BC_3MONTH"):
-                            print('  3 mo: ' + str(elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data))
-                        elif (elem.childNodes[13].childNodes[1].childNodes[x].tagName == "d:BC_6MONTH"):
-                            print('  6 mo: ' + str(elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data))
-                        elif (elem.childNodes[13].childNodes[1].childNodes[x].tagName == "d:BC_1YEAR"):
-                            print('  1Y: ' + str(elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data))
-                        elif (elem.childNodes[13].childNodes[1].childNodes[x].tagName == "d:BC_2YEAR"):
-                            print('  2Y: ' + str(elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data))
-                        elif (elem.childNodes[13].childNodes[1].childNodes[x].tagName == "d:BC_3YEAR"):
-                            print('  3Y: ' + str(elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data))
-                        elif (elem.childNodes[13].childNodes[1].childNodes[x].tagName == "d:BC_5YEAR"):
-                            print('  5Y: ' + str(elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data))
-                        elif (elem.childNodes[13].childNodes[1].childNodes[x].tagName == "d:BC_7YEAR"):
-                            print('  7Y: ' + str(elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data))
-                        elif (elem.childNodes[13].childNodes[1].childNodes[x].tagName == "d:BC_10YEAR"):
-                            print('  10Y: ' + str(elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data))
-                        elif (elem.childNodes[13].childNodes[1].childNodes[x].tagName == "d:BC_20YEAR"):
-                            print('  20Y: ' + str(elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data))
-                        elif (elem.childNodes[13].childNodes[1].childNodes[x].tagName == "d:BC_30YEAR"):
-                            print('  30Y: ' + str(elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data))
-                        """
-
+                sql = "INSERT INTO TSY_HISTORICALS(URL,1MO,2MO,3MO,6MO,1Y,2Y,3Y,5Y,7Y,10Y,20Y,30Y)  "
+                sql += "VALUES(" + chr(39) + tsyGovLink + chr(39) #+# "," + y1 
+                sql += "," + str(m1)
+                sql += "," + str(m2)
+                sql += "," + str(m3)
+                sql += "," + str(m6)
+                sql += "," + str(y1)
+                sql += "," + str(y2)
+                sql += "," + str(y3)
+                sql += "," + str(y5)
+                sql += "," + str(y7)
+                sql += "," + str(y10)
+                sql += "," + str(y20)
+                sql += "," + str(y30)
+                sql += ")"
+                #print(sql)
+                mycursor.execute(sql)
+                mydb.commit()
 
 
 if __name__ == '__main__':
