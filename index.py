@@ -3,6 +3,7 @@ import requests
 import json # used for reading config.json for db authentication credentials
 from xml.dom import minidom # https://docs.python.org/3/library/xml.dom.minidom.html
 import mysql.connector as mysql #import sqlite3  
+import re                       # for parsing date from Treasury file
 
 #########################################################
 # https://stackoverflow.com/questions/22586286/python-is-there-an-equivalent-of-mid-right-and-left-from-basic
@@ -54,13 +55,18 @@ class Treasury:
             if (elem.childNodes[1].tagName == "id"):
                 tsyGovLink = elem.childNodes[1].firstChild.data #gets the hyperlink to the treasury gov website
             if (elem.childNodes[13].tagName == "content"):
-                y1 = -99 ; y2 = -99; y3 = -99; y5 = -99; y7 = -99; y10 = -99; y20 = -99; y30 = -99
-                m1 = -99; m2 = -99; m3 = -99; m6 = -99
+                y1 = 'NULL' ; y2 = 'NULL'; y3 = 'NULL'; y5 = 'NULL'; y7 = 'NULL'; y10 = 'NULL'; y20 = 'NULL'; y30 = 'NULL'
+                m1 = 'NULL'; m2 = 'NULL'; m3 = 'NULL'; m6 = 'NULL'
                 for x in range(1,elem.childNodes[13].childNodes[1].childNodes.length):
                     if (elem.childNodes[13].childNodes[1].childNodes[x].nodeType == elem.ELEMENT_NODE):
                         mytag = elem.childNodes[13].childNodes[1].childNodes[x].tagName 
                         if (mytag == "d:NEW_DATE"):
                             tsyDate = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
+                            matches = re.search('^([0-9]{4}\-[0-9]{2}\-[0-9]{2})T.+$', tsyDate)
+                            if (matches):
+                                parsedDate = "'" + matches.group(1) + "'"
+                            else:
+                                parsedDate = 'NULL'
                         if (left(mytag,5)=="d:BC_"):    # this is the prefix US Treasury uses for rates
                             if (elem.childNodes[13].childNodes[1].childNodes[x].hasAttribute('m:null') and elem.childNodes[13].childNodes[1].childNodes[x].getAttribute('m:null') == 'true'):
                                 assert(True)
@@ -89,9 +95,10 @@ class Treasury:
                                     y20 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
                                 elif  (mytag == "d:BC_30YEAR"):
                                     y30 = elem.childNodes[13].childNodes[1].childNodes[x].firstChild.data
-
-                sql = "INSERT INTO TSY_HISTORICALS(URL,1MO,2MO,3MO,6MO,1Y,2Y,3Y,5Y,7Y,10Y,20Y,30Y)  "
+                
+                sql = "INSERT INTO TSY_HISTORICALS(URL,TSY_DATE,1MO,2MO,3MO,6MO,1Y,2Y,3Y,5Y,7Y,10Y,20Y,30Y)  "
                 sql += "VALUES(" + chr(39) + tsyGovLink + chr(39) #+# "," + y1 
+                sql += "," + parsedDate
                 sql += "," + str(m1)
                 sql += "," + str(m2)
                 sql += "," + str(m3)
@@ -105,6 +112,7 @@ class Treasury:
                 sql += "," + str(y20)
                 sql += "," + str(y30)
                 sql += ")"
+                
                 #print(sql)
                 mycursor.execute(sql)
                 mydb.commit()
