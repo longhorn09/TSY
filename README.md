@@ -18,7 +18,7 @@ should be setup like follows
 # MySQL
 
 Simple table schema in the sql directory,  definition below
-```
+```SQL
 create table TSY_HISTORICALS(
 	ID int NOT NULL AUTO_INCREMENT,
     URL varchar(100) DEFAULT NULL,
@@ -36,4 +36,5 @@ create table TSY_HISTORICALS(
     `20Y` double DEFAULT NULL,
     `30Y` double DEFAULT NULL,    
 	PRIMARY KEY(ID)
-);```
+);
+```
