@@ -4,7 +4,7 @@ To parse yield curve for purposes of graphing from treasury.gov
 # config.json
 
 should be setup like follows
-```
+```json
 {
     "username":"username",
     "password":"password",    
