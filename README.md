@@ -1,5 +1,5 @@
 # TSY
-To parse yield curve for purposes of graphing from treasury.gov
+To parse yield curve for visualization purposes from treasury.gov
 
 # config.json
 
